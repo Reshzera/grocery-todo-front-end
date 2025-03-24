@@ -24,7 +24,7 @@ const Home: React.FC = () => {
 
   const filteredLists = useMemo(() => {
     return allLists.filter((list) =>
-      list.toLowerCase().includes(searchTerm.toLowerCase()),
+      list.toLowerCase().includes(debouncedSearchTerm.toLowerCase()),
     )
   }, [debouncedSearchTerm])
 
@@ -34,24 +34,39 @@ const Home: React.FC = () => {
         className={styles.title}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+        tabIndex={-1}
       >
         Select Your To-Do List
       </motion.h1>
 
+      <label htmlFor="searchInput" className={styles.visuallyHidden}>
+        Search to-do lists
+      </label>
       <input
+        id="searchInput"
         type="text"
         className={styles.searchInput}
         placeholder="Search lists..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
+        aria-label="Search lists"
       />
 
-      <div className={styles.listContainer}>
+      <div
+        className={styles.listContainer}
+        role="radiogroup"
+        aria-label="Available to-do lists"
+      >
         {filteredLists.map((list) => (
           <motion.button
             key={list}
+            type="button"
+            role="radio"
             className={`${styles.listButton} ${selectedList === list ? styles.selected : ""}`}
             onClick={() => setSelectedList(list)}
+            aria-checked={selectedList === list}
+            tabIndex={selectedList === list ? 0 : -1}
+            aria-label={`Select ${list} list`}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -61,12 +76,19 @@ const Home: React.FC = () => {
       </div>
 
       <motion.button
+        type="button"
         className={styles.confirmButton}
         disabled={!selectedList}
+        aria-disabled={!selectedList}
+        aria-label={
+          selectedList
+            ? `Continue with ${selectedList} list`
+            : "Continue button disabled"
+        }
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
       >
-        Continue <FiArrowRight size={20} />
+        Continue <FiArrowRight size={20} aria-hidden="true" focusable="false" />
       </motion.button>
     </div>
   )
