@@ -9,7 +9,7 @@ const router = createBrowserRouter([
     element: <Home />,
   },
   {
-    path: "/:list",
+    path: "/:listId",
     element: <TodoList />,
   },
 ])

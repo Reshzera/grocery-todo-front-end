@@ -24,7 +24,6 @@
   background-color: #334155;
   color: #ffffff;
   font-size: 1rem;
-  margin-bottom: 1rem;
   outline: none;
   transition: background-color 0.2s;
 
@@ -111,4 +110,29 @@
 
 .visuallyHidden {
   display: none;
+}
+
+.inputContainer {
+  display: flex;
+  width: 100%;
+  max-width: 400px;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.addButton {
+  background-color: #2563eb;
+  border: none;
+  padding: 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+
+  &:hover {
+    background-color: #2563eb;
+  }
+
+  svg {
+    color: #ffffff;
+  }
 }

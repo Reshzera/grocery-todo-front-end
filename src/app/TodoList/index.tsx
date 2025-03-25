@@ -1,33 +1,59 @@
-import React, { useState } from "react"
+import React, { useEffect, useState } from "react"
 import { motion } from "framer-motion"
 import { FiPlus, FiCheckCircle, FiCircle } from "react-icons/fi"
+import { useParams } from "react-router-dom"
 import styles from "./styles.module.scss"
-
-const mockItems = [
-  { text: "Buy groceries", completed: false },
-  { text: "Walk the dog", completed: true },
-  { text: "Do laundry", completed: false },
-  { text: "Water the plants", completed: true },
-]
+import TodoItemModule from "../../config/api/todoItemModule"
+import { TodoItemResponseDto, CreateTodoItemDto } from "../../types/todoItem"
 
 const TodoList: React.FC = () => {
-  const [tasks, setTasks] =
-    useState<{ text: string; completed: boolean }[]>(mockItems)
+  const { listId } = useParams<{ listId: string }>()
   const [task, setTask] = useState("")
+  const [tasks, setTasks] = useState<TodoItemResponseDto[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const addTask = () => {
-    if (task.trim()) {
-      setTasks([...tasks, { text: task, completed: false }])
+  useEffect(() => {
+    if (!listId) return
+    const fetchTasks = async () => {
+      try {
+        const items = await TodoItemModule.getTodoItems(listId)
+        setTasks(items)
+      } catch (err) {
+        console.error("Failed to fetch tasks", err)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchTasks()
+  }, [listId])
+
+  const addTask = async () => {
+    const trimmed = task.trim()
+    if (!trimmed || !listId) return
+    try {
+      const newTask = await TodoItemModule.createTodoItem(listId, {
+        name: trimmed,
+        checked: false,
+      } as CreateTodoItemDto)
+      setTasks((prev) => [...prev, newTask])
       setTask("")
+    } catch (err) {
+      console.error("Failed to create task", err)
     }
   }
 
-  const toggleTask = (index: number) => {
-    setTasks(
-      tasks.map((t, i) =>
-        i === index ? { ...t, completed: !t.completed } : t,
-      ),
-    )
+  const toggleTask = async (index: number) => {
+    const taskToUpdate = tasks[index]
+    try {
+      const updated = await TodoItemModule.updateTodoItem(taskToUpdate.id, {
+        checked: !taskToUpdate.checked,
+        name: taskToUpdate.name,
+      })
+      const updatedTasks = tasks.map((t, i) => (i === index ? updated : t))
+      setTasks(updatedTasks)
+    } catch (err) {
+      console.error("Failed to update task", err)
+    }
   }
 
   return (
@@ -38,7 +64,7 @@ const TodoList: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         tabIndex={-1}
       >
-        Modern To-Do List
+        Your To-Do List
       </motion.h1>
 
       <div className={styles.inputContainer}>
@@ -60,51 +86,45 @@ const TodoList: React.FC = () => {
           onClick={addTask}
           aria-label="Add task"
         >
-          <FiPlus size={24} aria-hidden="true" focusable="false" />
+          <FiPlus size={24} />
         </button>
       </div>
 
-      <ul className={styles.taskList} aria-label="Task list">
-        {tasks.map(({ completed, text }, index) => (
-          <motion.li
-            key={index}
-            className={styles.taskItem}
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-          >
-            <span
-              className={completed ? styles.completed : ""}
-              aria-label={`Task: ${text}${completed ? ", completed" : ""}`}
+      {loading ? (
+        <p>Loading tasks...</p>
+      ) : (
+        <ul className={styles.taskList} aria-label="Task list">
+          {tasks.map(({ checked, name }, index) => (
+            <motion.li
+              key={index}
+              className={styles.taskItem}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 20 }}
             >
-              {text}
-            </span>
-            <button
-              type="button"
-              className={styles.checkbox}
-              onClick={() => toggleTask(index)}
-              aria-label={`Mark task "${text}" as ${completed ? "incomplete" : "complete"}`}
-              aria-pressed={completed}
-            >
-              {completed ? (
-                <FiCheckCircle
-                  size={20}
-                  color="#2563eb"
-                  aria-hidden="true"
-                  focusable="false"
-                />
-              ) : (
-                <FiCircle
-                  size={20}
-                  color="#ffffff"
-                  aria-hidden="true"
-                  focusable="false"
-                />
-              )}
-            </button>
-          </motion.li>
-        ))}
-      </ul>
+              <span
+                className={checked ? styles.completed : ""}
+                aria-label={`Task: ${name}${checked ? ", completed" : ""}`}
+              >
+                {name}
+              </span>
+              <button
+                type="button"
+                className={styles.checkbox}
+                onClick={() => toggleTask(index)}
+                aria-label={`Mark task "${name}" as ${checked ? "incomplete" : "complete"}`}
+                aria-pressed={checked}
+              >
+                {checked ? (
+                  <FiCheckCircle size={20} color="#2563eb" />
+                ) : (
+                  <FiCircle size={20} color="#ffffff" />
+                )}
+              </button>
+            </motion.li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
